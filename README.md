@@ -427,7 +427,8 @@ $executor = new class() implements ExecutorInterface{
 
 $sleepProvider = new class() implements WorkerSleepProvider{
     public function getSleep() : ?int {
-        /* This allows you to return null to stop the worker, which can be used with something like redis to mark.
+        /**
+         * This allows you to return null to stop the worker, which can be used with something like redis to mark.
          *
          * Note that this method is called _before_ we poll for a message, and therefore if it returns null we'll eject
          * before we process a message.
