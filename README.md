@@ -1,4 +1,5 @@
-# Redis Simple Message Queue
+Redis Simple Message Queue
+--------------------------
 [![Travis CI](https://travis-ci.org/abreksa4/php-rsmq.svg?branch=master)](https://travis-ci.org/abreksa4/php-rsmq)
 [![codecov](https://codecov.io/gh/abreksa4/php-rsmq/branch/master/graph/badge.svg)](https://codecov.io/gh/abreksa4/php-rsmq)
 [![License](https://poser.pugx.org/andrewbreksa/rsmq/license)](//packagist.org/packages/andrewbreksa/rsmq)
@@ -13,14 +14,41 @@
 A lightweight message queue for PHP that requires no dedicated queue server. Just a Redis server. See 
 [smrchy/rsmq](https://github.com/smrchy/rsmq) for more information.
 
-This is a fork of [eislambey/php-rsmq](https://github.com/eislambey/php-rsmq) that uses predis. 
+This is a fork of [eislambey/php-rsmq](https://github.com/eislambey/php-rsmq) with the following changes:
+- Uses [predis](https://github.com/nrk/predis) instead of the Redis extension
+- Has some OO wrappers for QueueAttributes and Message
+- Provides a simple [QueueWorker](./src/QueueWorker.php)
 
-## Installation
+# Table of Contents
+
+<!-- toc -->
+
+- [Installation](#installation)
+- [Methods](#methods)
+  * [Construct](#construct)
+  * [Queue](#queue)
+    + [createQueue](#createqueue)
+    + [listQueues](#listqueues)
+    + [deleteQueue](#deletequeue)
+    + [getQueueAttributes](#getqueueattributes)
+    + [setQueueAttributes](#setqueueattributes)
+  * [Messages](#messages)
+    + [sendMessage](#sendmessage)
+    + [receiveMessage](#receivemessage)
+    + [deleteMessage](#deletemessage)
+    + [popMessage](#popmessage)
+    + [changeMessageVisibility](#changemessagevisibility)
+- [QueueWorker](#queueworker)
+- [LICENSE](#license)
+
+<!-- tocstop -->
+
+# Installation
     composer require andrewbreksa/rsmq
 
-## Methods
+# Methods
 
-### Construct
+## Construct
 Creates a new instance of RSMQ.
 
 Parameters:
@@ -45,9 +73,9 @@ $predis = new Client(
 $this->rsmq = new RSMQClient($predis);
 ```
 
-### Queue
+## Queue
 
-#### createQueue
+### createQueue
 Create a new queue.
 
 Parameters:
@@ -79,7 +107,7 @@ Example:
 $rsmq->createQueue('myqueue');
 ```
 
-#### listQueues
+### listQueues
 List all queues
 
 Returns an array:
@@ -97,7 +125,7 @@ Example:
 $queues = $rsmq->listQueues();
 ```
 
-#### deleteQueue
+### deleteQueue
 Deletes a queue and all messages.
 
 Parameters:
@@ -124,7 +152,7 @@ Example:
 $rsmq->deleteQueue('myqueue');
 ```
 
-#### getQueueAttributes
+### getQueueAttributes
 Get queue attributes, counter and stats
 
 Parameters:
@@ -165,7 +193,7 @@ echo "hidden messages: ", $attributes->getHiddenMessageCount(), "\n";
 ```
 
 
-#### setQueueAttributes
+### setQueueAttributes
 Sets queue parameters.
 
 Parameters:
@@ -212,9 +240,9 @@ $maxsize = 2048;
 $rsmq->setQueueAttributes($queue, $vt, $delay, $maxsize);
 ```
 
-### Messages
+## Messages
 
-#### sendMessage
+### sendMessage
 Sends a new message.
 
 Parameters:
@@ -245,7 +273,7 @@ $id = $rsmq->sendMessage('myqueue', 'a message');
 echo "Message Sent. ID: ", $id;
 ```
 
-#### receiveMessage
+### receiveMessage
 Receive the next message from the queue.
 
 Parameters:
@@ -281,7 +309,7 @@ echo "Message ID: ", $message->getId();
 echo "Message: ", $message->getMessage();
 ```
 
-#### deleteMessage
+### deleteMessage
 Parameters:
 
 * `$queue` (string): The Queue name.
@@ -306,7 +334,7 @@ $id = $rsmq->sendMessage('queue', 'a message');
 $rsmq->deleteMessage('queue', $id);
 ```
 
-#### popMessage
+### popMessage
 Receive the next message from the queue **and delete it**.
 
 **Important:** This method deletes the message it receives right away. There is no way to receive the message again if 
@@ -343,7 +371,7 @@ echo "Message ID: ", $message->getId();
 echo "Message: ", $message->getMessage();
 ```
 
-#### changeMessageVisibility
+### changeMessageVisibility
 Change the visibility timer of a single message.
 The time when the message will be visible again is calculated from the current time (now) + `vt`.
 
@@ -377,5 +405,40 @@ if($rsmq->changeMessageVisibility($queue, $id, 60)) {
 }
 ```
 
-## LICENSE
+# QueueWorker
+The QueueWorker class provides an easy way to consume RSMQ messages, to use it:
+```php
+<?php
+/**
+ * @var AndrewBreksa\RSMQ\RSMQClientInterface $rsmq
+ */
+
+use AndrewBreksa\RSMQ\ExecutorInterface;
+use AndrewBreksa\RSMQ\Message;
+use AndrewBreksa\RSMQ\QueueWorker;
+use AndrewBreksa\RSMQ\WorkerSleepProvider;
+
+$executor = new class() implements ExecutorInterface{
+    public function __invoke(Message $message) : bool {
+        //@todo: do some work, true will ack/delete the message, false will allow the queue's config to "re-publish"
+        return true;
+    }
+};
+
+$sleepProvider = new class() implements WorkerSleepProvider{
+    public function getSleep() : ?int {
+        /* This allows you to return null to stop the worker, which can be used with something like redis to mark.
+         *
+         * Note that this method is called _before_ we poll for a message, and therefore if it returns null we'll eject
+         * before we process a message.
+         */
+        return 1;
+    }
+};
+
+$worker = new QueueWorker($rsmq, $executor, $sleepProvider, 'test_queue');
+$worker->work(); // here we can optionally pass true to only process one message
+```
+
+# LICENSE
 The MIT LICENSE. See [LICENSE](./LICENSE)

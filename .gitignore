@@ -3,3 +3,5 @@ vendor/
 coverage/
 .phpunit.result.cache
 coverage.xml
+clover.xml
+node_modules/
