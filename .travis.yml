@@ -1,11 +1,12 @@
 language: php
 services:
-  - redis-server
+  - redis
 
 php:
   - 7.2
   - 7.3
   - 7.4
+  - 8.0
   - nightly
 
 matrix:
@@ -20,7 +21,6 @@ script:
   - composer test -- --coverage-clover=clover.xml
   - composer phpstan
   - composer psalm
-  - composer security
 
 cache:
   directories:
