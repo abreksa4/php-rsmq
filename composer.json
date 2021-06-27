@@ -3,7 +3,7 @@
   "description": "Redis Simple Message Queue.",
   "type": "library",
   "license": "MIT",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "authors": [
     {
       "name": "emre can islambey",
@@ -15,7 +15,7 @@
     }
   ],
   "require": {
-    "php": "^7.2|^8.0",
+    "php": "^7.4|^8.0",
     "ext-mbstring": "*",
     "predis/predis": "^1.1"
   },
@@ -41,8 +41,8 @@
     ]
   },
   "scripts": {
-    "test": "phpunit",
-    "local-test": "php ./vendor/bin/phpunit --coverage-text --coverage-clover coverage.xml --coverage-html ./coverage",
+    "test": "XDEBUG_MODE=coverage phpunit",
+    "local-test": "XDEBUG_MODE=coverage php ./vendor/bin/phpunit --coverage-text --coverage-clover coverage.xml --coverage-html ./coverage",
     "phpstan": "phpstan analyse -c phpstan.neon",
     "cbf": "php ./vendor/bin/phpcbf tests src",
     "psalm": "php ./vendor/bin/psalm --show-info=true",
